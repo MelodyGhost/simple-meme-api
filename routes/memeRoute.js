@@ -1,0 +1,55 @@
+const express = require('express');
+const Meme = require('../model/Memes');
+const { memeUploader } = require('../utilities/memeUploader');
+
+const memeRoute = express.Router();
+
+const getMemes = async (req, res, next) => {
+  try {
+    const allMemes = await Meme.find({ active: true });
+    res.status(200).send({
+      status: 'success',
+      results: allMemes.length,
+      data: allMemes,
+    });
+  } catch (err) {
+    next(new Error('There is an error fetching meme'));
+  }
+};
+
+const addMeme = async (req, res, next) => {
+  const { url, uploaded } = req.body;
+
+  try {
+    const newMeme = await Meme.create({ url, uploaded });
+
+    res.status(201).send({
+      status: 'success',
+      data: {
+        meme: newMeme,
+      },
+    });
+  } catch (err) {
+    next(new Error('There is an error adding meme'));
+  }
+};
+
+const deleteMeme = async (req, res, next) => {
+  try {
+    const deleted = await Meme.findByIdAndUpdate(req.params.id, {
+      active: false,
+    });
+
+    res.status(202).send({
+      status: 'success',
+      data: deleted,
+    });
+  } catch (err) {
+    next(new Error('Error deleting file'));
+  }
+};
+
+memeRoute.route('/').get(getMemes).post(memeUploader, addMeme);
+memeRoute.delete('/:id', deleteMeme);
+
+module.exports = memeRoute;
