@@ -49,7 +49,36 @@ const deleteMeme = async (req, res, next) => {
   }
 };
 
+const getLast7DaysStats = async (req, res, next) => {
+  const curDate = new Date();
+  curDate.setDate(curDate.getDate() - 7);
+  const last7DaysString = `${curDate.getFullYear()}-${curDate.getMonth()}-${curDate.getDate()}`;
+  const stats = await Meme.aggregate([
+    {
+      $match: { created: { $gt: new Date(last7DaysString) } },
+    },
+    {
+      $group: {
+        _id: {
+          year: { $year: '$created' },
+          month: { $month: '$created' },
+          day: { $dayOfMonth: '$created' },
+        },
+        total: { $sum: 1 },
+      },
+    },
+    {
+      $sort: {
+        _id: 1,
+      },
+    },
+  ]);
+
+  res.send(stats);
+};
+
 memeRoute.route('/').get(getMemes).post(memeUploader, addMeme);
 memeRoute.delete('/:id', deleteMeme);
+memeRoute.get('/stats', getLast7DaysStats);
 
 module.exports = memeRoute;
